@@ -21,3 +21,10 @@ async def create_member(first_name: str, last_name: str):
                 max_member = current_key_num
     MEMBERS[f"Member_{max_member + 1}"] = {"first_name":first_name, "last_name": last_name}
     return MEMBERS[f"Member_{max_member + 1}"]
+
+
+@app.put("/{member_key}")
+async def create_member(member_key: str, first_name: str, last_name: str):
+    member_info = {"first_name": first_name, "last_name": last_name}
+    MEMBERS[member_key] = member_info
+    return member_info

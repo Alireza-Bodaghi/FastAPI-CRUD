@@ -25,6 +25,22 @@ class Book(BaseModel):
     # so make sure to put the right value!
     rating: int = Field(gt=-1, lt=101)
 
+# to provide an example of your schema you define a class named 'Config'
+# and then you should assign an example value of your value to the property
+# named 'schema_extra'. these values will show on swagger UI.
+# attention: 'Config' and 'schema_extra' are not just arbitrary names!
+# so keep in mind that must use the same names!
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": "24b0d1e9-452a-41f5-b734-931d0392eed1",
+                "title": "a title for book",
+                "author": "author full name if possible",
+                "description": "a description for describing the content of book",
+                "rating": 20
+            }
+        }
+
 
 BOOKS = []
 

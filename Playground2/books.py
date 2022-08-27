@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status, Form
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from uuid import UUID
@@ -44,9 +44,9 @@ class Book(BaseModel):
         }
 
 
-# using another model with no rating property as respons model
+# using another model with no rating property as response model
 # in our apis. for example, we have class of user that has
-# user_name and password. in response we would like to return an object
+# username and password. in response we would like to return an object
 # that has no password property! this way we can handle that scenario.
 class BookNoRating(BaseModel):
     id: UUID
@@ -118,6 +118,17 @@ async def get_book_by_uuid(book_id: UUID) -> Book:
 async def create_book(book: Book) -> Book:
     BOOKS.append(book)
     return book
+
+
+# using form fields (instead of path parameter and query parameter):
+# in this case you have to assign Form(...) to your arguments!
+# otherwise FastAPI will consider it as query parameter.
+# (...) is Ellipsis. It has various usages, but in this case
+# it means as the default argument value. Especially when you want to
+# distinguish between not passing in value and passing in None.
+@app.post("/book/login")
+async def login_book(username: str = Form(...), password: str = Form(...)) -> dict[str, str]:
+    return {"username": username, "password": password}
 
 
 @app.put("/{book_id}")

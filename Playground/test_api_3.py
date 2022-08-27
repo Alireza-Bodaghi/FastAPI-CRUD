@@ -23,6 +23,7 @@ async def create_member(first_name: str, last_name: str):
     return MEMBERS[f"Member_{max_member + 1}"]
 
 
+# solved by path parameters
 @app.put("/{member_key}")
 async def create_member(member_key: str, first_name: str, last_name: str):
     member_info = {"first_name": first_name, "last_name": last_name}
@@ -30,7 +31,21 @@ async def create_member(member_key: str, first_name: str, last_name: str):
     return member_info
 
 
+# solved by path parameters
 @app.delete("/{member_key}")
-async def create_member(member_key: str) -> str:
+async def delete_member(member_key: str) -> str:
     del MEMBERS[member_key]
     return f"{member_key} has been deleted!"
+
+
+# solved by query parameters
+# attention :
+# don't forget the '/' at the end of path,
+# 'cause that's how FastAPI will know that
+# this api is working with QUERY PARAMETER.
+# query parameters use a query string in a format of
+# '/?key=value'
+@app.delete("/path/")
+async def delete_member_qp(member_key: str) -> dict[str, dict[str, str]]:
+    del MEMBERS[member_key]
+    return MEMBERS

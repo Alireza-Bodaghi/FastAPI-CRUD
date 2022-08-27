@@ -46,10 +46,23 @@ BOOKS = []
 
 
 @app.get("/")
-async def get_all_books() -> list[Book]:
+async def get_all_books(number_of_books_to_return: Optional[int] = None) -> list[Book]:
     if len(BOOKS) < 1:
         creating_books_not_an_api()
+    if number_of_books_to_return and len(BOOKS) > number_of_books_to_return > 0:
+        new_books = []
+        for i in range(number_of_books_to_return):
+            new_books.append(BOOKS[i])
+        return new_books
     return BOOKS
+
+
+# get specific book by unique uuid
+@app.get("/book/{book_id}")
+async def get_book_by_uuid(book_id: UUID) -> Book:
+    for book in BOOKS:
+        if book.id == book_id:
+            return book
 
 
 @app.post("/")

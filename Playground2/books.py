@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from uuid import UUID
@@ -42,6 +42,19 @@ class Book(BaseModel):
                 "rating": 20
             }
         }
+
+
+# using another model with no rating property as respons model
+# in our apis. for example, we have class of user that has
+# user_name and password. in response we would like to return an object
+# that has no password property! this way we can handle that scenario.
+class BookNoRating(BaseModel):
+    id: UUID
+    title: str = Field(min_length=1)
+    author: str = Field(min_length=1, max_length=100)
+    description: Optional[str] = Field(title="Description of the book",
+                                       max_length=100,
+                                       min_length=1)
 
 
 # custom exceptions and using it in fastAPI exception handler
@@ -88,9 +101,20 @@ async def get_book_by_uuid(book_id: UUID) -> Book:
     for book in BOOKS:
         if book.id == book_id:
             return book
+    raise item_not_found()
 
 
-@app.post("/")
+@app.get("/book/rating/{book_id}",response_model=BookNoRating)
+async def get_book_by_uuid(book_id: UUID) -> Book:
+    for book in BOOKS:
+        if book.id == book_id:
+            return book
+    raise item_not_found()
+
+
+# by using status_code in path parameter we can
+# attach our specific http code.
+@app.post("/", status_code=status.HTTP_201_CREATED)
 async def create_book(book: Book) -> Book:
     BOOKS.append(book)
     return book

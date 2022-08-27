@@ -1,8 +1,10 @@
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.responses import JSONResponse
 from uuid import UUID
+
 
 app = FastAPI()
 
@@ -42,13 +44,36 @@ class Book(BaseModel):
         }
 
 
+# custom exceptions and using it in fastAPI exception handler
+class NegativeNumException(Exception):
+    def __init__(self, number_of_books_to_return: int):
+        self.number_of_books_to_return = number_of_books_to_return
+
+
 BOOKS = []
+
+
+# exception handler of fastAPI to handle exception in a way that you
+# prefer. pay attention to the argument of method!
+@app.exception_handler(NegativeNumException)
+async def negative_number_exception_handler(request: Request, exception: NegativeNumException):
+    # content field must be dict to proceed
+    return JSONResponse(
+        status_code=418,
+        content={"message": f"Are you out of your mind?"
+                 f" trying to get {exception.number_of_books_to_return} books? "
+                 f"please try again with valid number!"}
+    )
 
 
 @app.get("/")
 async def get_all_books(number_of_books_to_return: Optional[int] = None) -> list[Book]:
+    if number_of_books_to_return and number_of_books_to_return < 0:
+        raise NegativeNumException(number_of_books_to_return)
+
     if len(BOOKS) < 1:
         creating_books_not_an_api()
+
     if number_of_books_to_return and len(BOOKS) > number_of_books_to_return > 0:
         new_books = []
         for i in range(number_of_books_to_return):
@@ -79,6 +104,7 @@ async def update_book(book_id: UUID, book: Book) -> Book:
             BOOKS[index] = book
             return BOOKS[index]
         index += 1
+    raise item_not_found()
 
 
 @app.delete("/{book_id}")
@@ -89,6 +115,7 @@ async def delete_book(book_id: UUID) -> str:
             del BOOKS[index]
             return f"book with id = {book_id} has been deleted!"
         index += 1
+    raise item_not_found()
 
 
 # this is just a way to have data to manipulate
@@ -103,3 +130,11 @@ def creating_books_not_an_api():
                         description=f"description {i}",
                         rating=i)
         BOOKS.append(new_book)
+
+
+# declaring a function for a specific Exception to raise
+# as you can see, we can also declare http header in exception
+def item_not_found() -> HTTPException:
+    return HTTPException(status_code=404,
+                         detail="Book not found",
+                         headers={"X-Header-Error": "can't find any book by UUID"})

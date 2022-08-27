@@ -28,3 +28,9 @@ async def create_member(member_key: str, first_name: str, last_name: str):
     member_info = {"first_name": first_name, "last_name": last_name}
     MEMBERS[member_key] = member_info
     return member_info
+
+
+@app.delete("/{member_key}")
+async def create_member(member_key: str) -> str:
+    del MEMBERS[member_key]
+    return f"{member_key} has been deleted!"

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request, status, Form
+from fastapi import FastAPI, HTTPException, Request, status, Form, Header
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 from uuid import UUID
@@ -104,12 +104,30 @@ async def get_book_by_uuid(book_id: UUID) -> Book:
     raise item_not_found()
 
 
-@app.get("/book/rating/{book_id}",response_model=BookNoRating)
+# using response_model to send a specific object as response
+@app.get("/book/rating/{book_id}", response_model=BookNoRating)
 async def get_book_by_uuid(book_id: UUID) -> Book:
     for book in BOOKS:
         if book.id == book_id:
             return book
     raise item_not_found()
+
+
+# by assigning Header(None) to argument we can define headers.
+@app.get("/header")
+async def read_header(header: Optional[str] = Header(None)) -> dict[str, str]:
+    return {"Header": header}
+
+
+# a simple login api by passing username and
+# password as headers and returning the book in list
+@app.get("/header/login/")
+async def read_header(book_id: int,
+                      username: Optional[str] = Header(None),
+                      password: Optional[str] = Header(None)) -> dict[str, str]:
+    if username == "Alireza" and password == "tst1234":
+        return BOOKS[book_id]
+    return {"message": "Invalid user!"}
 
 
 # by using status_code in path parameter we can

@@ -71,6 +71,26 @@ async def create_book(book: Book) -> Book:
     return book
 
 
+@app.put("/{book_id}")
+async def update_book(book_id: UUID, book: Book) -> Book:
+    index = 0
+    for book_itr in BOOKS:
+        if book_itr.id == book_id:
+            BOOKS[index] = book
+            return BOOKS[index]
+        index += 1
+
+
+@app.delete("/{book_id}")
+async def delete_book(book_id: UUID) -> str:
+    index = 0
+    for book_itr in BOOKS:
+        if book_itr.id == book_id:
+            del BOOKS[index]
+            return f"book with id = {book_id} has been deleted!"
+        index += 1
+
+
 # this is just a way to have data to manipulate
 # we could also use __init__ magic method to construct
 # data. there is no deference in the output we're getting.

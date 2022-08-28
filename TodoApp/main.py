@@ -90,6 +90,25 @@ async def create_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_d
     }
 
 
+@app.delete("/{todo_id}")
+async def create_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
+    todo_entity = db.query(models.Todo) \
+        .filter(models.Todo.id == todo_id) \
+        .first()
+
+    if todo_entity is None:
+        raise http_exception()
+
+    # deletes data after flush or committing transaction
+    db.query(models.Todo).filter(models.Todo.id == todo_id).delete()
+    db.commit()
+
+    return {
+        'status_code': '200',
+        'transaction': 'Successful'
+    }
+
+
 def http_exception():
     return HTTPException(status_code=404,
                          detail="Todo not found!")

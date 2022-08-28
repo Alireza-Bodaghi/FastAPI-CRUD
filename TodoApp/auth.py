@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional
@@ -6,12 +6,13 @@ from sqlalchemy.orm import Session
 from database import session_db, engin
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from jose import jwt
+from jose import jwt, JWTError
 import models
 
 
 # this is secret key of jwt signature
 SECRET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJ"
+
 # alg in jwt header
 ALGORITHM = "HS256"
 
@@ -92,6 +93,22 @@ def create_access_token(username: str,
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+# decoding token and getting username and user_id(PK)
+async def get_current_user(token: str = Depends(oath2_bearer)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        username: str = payload.get("sub")
+        user_id = payload.get("id")
+        if username is None or user_id is None:
+            raise get_user_exception()
+        return {
+            "username": username,
+            "id": user_id
+        }
+    except JWTError:
+        raise get_user_exception()
+
+
 @app.post("/create/user")
 async def create_new_user(new_user: CreateUser, db: Session = Depends(get_db)):
     user_entity = models.User()
@@ -117,8 +134,7 @@ async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
     user = authenticate_user(username, password, db)
 
     if not user:
-        raise HTTPException(status_code=404,
-                            detail="user not found!")
+        raise get_token_exception()
     # defining an expiration time of token
     token_expires = timedelta(minutes=20)
     token = create_access_token(user.username,
@@ -127,3 +143,20 @@ async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
     # this returns our token. you can get token and paste it
     # in jwt.io to see its content
     return {"token": token}
+
+
+# Exceptions:
+def get_user_exception():
+    credentials_exception = HTTPException(
+        status_code= status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials!",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+    return credentials_exception
+
+
+def get_token_exception():
+    token_exception_response = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                             detail="Incorrect username or password",
+                                             headers={"WWW-Authenticate": "Bearer"})
+    return token_exception_response

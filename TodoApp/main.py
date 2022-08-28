@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import models
 from database import engin, session_db
 from pydantic import BaseModel, Field
+from auth import get_current_user, get_user_exception
 
 app = FastAPI()
 
@@ -36,6 +37,23 @@ class TodoModel(BaseModel):
 @app.get("/")
 async def read_all(db: Session = Depends(get_db)):
     return db.query(models.Todo).all()
+
+
+# getting token on different port(like 9000) from auth.py
+# and using that token to retrieve data from another port(like 8000)
+# from main.py.
+# get_current_user dependency runs before path operations and gets
+# a user in the format of dict.
+@app.get("/todo/user")
+async def read_all_todos_by_user(user: dict[str, str] = Depends(get_current_user),
+                                 db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+
+    todos: list[models.Todo] = db.query(models.Todo)\
+        .filter(models.Todo.owner_id == user.get("id"))\
+        .all()
+    return todos
 
 
 @app.get("/todo/{todo_id}")

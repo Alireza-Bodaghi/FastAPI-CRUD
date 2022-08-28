@@ -8,7 +8,6 @@ from database import engin, session_db
 
 app = FastAPI()
 
-
 models.Base.metadata.create_all(bind=engin)
 
 
@@ -32,11 +31,15 @@ async def read_all(db: Session = Depends(get_db)):
 
 @app.get("/todo/{todo_id}")
 async def read_todo(todo_id: int, db: Session = Depends(get_db)):
-    result = db.query(models.Todo)\
-        .filter(models.Todo.id == todo_id)\
+    result = db.query(models.Todo) \
+        .filter(models.Todo.id == todo_id) \
         .first()
 
     if result is not None:
         return result
-    raise HTTPException(status_code=404,
-                         detail="Todo not found!")
+    raise http_exception()
+
+
+def http_exception():
+    return HTTPException(status_code=404,
+                        detail="Todo not found!")

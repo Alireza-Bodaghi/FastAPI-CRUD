@@ -41,10 +41,12 @@ def get_hash_password(password: str):
     return bcrypt_context.hash(password)
 
 
+# verifying password by bcrypt.verify method
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt_context.verify(plain_password, hashed_password)
 
 
+# authenticating user
 def authenticate_user(username: str, password: str, db: Session):
     user: models.User = db.query(models.User)\
         .filter(models.User.username == username)\
@@ -70,6 +72,8 @@ async def create_new_user(new_user: CreateUser, db: Session = Depends(get_db)):
     db.commit()
 
 
+# read OAuth2PasswordRequestForm docs for further information
+# it's a simple form to get username and password
 @app.post("/token")
 async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
                                  db: Session = Depends(get_db)):

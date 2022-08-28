@@ -46,7 +46,7 @@ class Book(BaseModel):
 
 # using another model with no rating property as response model
 # in our apis. for example, we have class of user that has
-# username and password. in response we would like to return an object
+# username and password. in response, we would like to return an object
 # that has no password property! this way we can handle that scenario.
 class BookNoRating(BaseModel):
     id: UUID

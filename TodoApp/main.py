@@ -26,7 +26,7 @@ class TodoModel(BaseModel):
     title: str
     description: Optional[str]
     priority: int = Field(gt=0, lt=6, description="priority is between 1-5 inclusive")
-    iscomplete: bool
+    is_complete: bool
 
 
 # using 'Depends()' to inject get_db before path operation
@@ -55,7 +55,7 @@ async def create_todo(todo: TodoModel, db: Session = Depends(get_db)) -> dict[st
     todo_entity.title = todo.title
     todo_entity.description = todo.description
     todo_entity.priority = todo.priority
-    todo_entity.iscomplete = todo.iscomplete
+    todo_entity.is_complete = todo.is_complete
     # save an instance after flush or committing transaction
     db.add(todo_entity)
     # commits transaction
@@ -79,7 +79,7 @@ async def update_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_d
     todo_entity.title = todo.title
     todo_entity.description = todo.description
     todo_entity.priority = todo.priority
-    todo_entity.iscomplete = todo.iscomplete
+    todo_entity.is_complete = todo.is_complete
     # updates an instance after flush or committing transaction by PK
     db.add(todo_entity)
     db.commit()

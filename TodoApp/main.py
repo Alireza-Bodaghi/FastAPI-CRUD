@@ -23,14 +23,13 @@ def get_db():
 
 
 class TodoModel(BaseModel):
-
     title: str
     description: Optional[str]
     priority: int = Field(gt=0, lt=6, description="priority is between 1-5 inclusive")
     iscomplete: bool
 
 
-# using Depends to inject get_db before path operation
+# using 'Depends()' to inject get_db before path operation
 # so this api is called 'dependent' and 'get_db' is called
 # 'dependable'
 # this is how dependency injection in FastAPI works.
@@ -68,6 +67,28 @@ async def create_todo(todo: TodoModel, db: Session = Depends(get_db)) -> dict[st
     }
 
 
+@app.put("/{todo_id}")
+async def create_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
+    todo_entity = db.query(models.Todo) \
+        .filter(models.Todo.id == todo_id) \
+        .first()
+
+    if todo_entity is None:
+        raise http_exception()
+
+    todo_entity.title = todo.title
+    todo_entity.description = todo.description
+    todo_entity.priority = todo.priority
+    todo_entity.iscomplete = todo.iscomplete
+    db.add(todo_entity)
+    db.commit()
+
+    return {
+        'status_code': '200',
+        'transaction': 'Successful'
+    }
+
+
 def http_exception():
     return HTTPException(status_code=404,
-                        detail="Todo not found!")
+                         detail="Todo not found!")

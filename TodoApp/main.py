@@ -80,6 +80,7 @@ async def create_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_d
     todo_entity.description = todo.description
     todo_entity.priority = todo.priority
     todo_entity.iscomplete = todo.iscomplete
+    # updates an instance after flush or committing transaction by PK
     db.add(todo_entity)
     db.commit()
 

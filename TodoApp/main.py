@@ -57,9 +57,15 @@ async def read_all_todos_by_user(user: dict[str, str] = Depends(get_current_user
 
 
 @app.get("/todo/{todo_id}")
-async def read_todo(todo_id: int, db: Session = Depends(get_db)):
+async def read_todo(todo_id: int,
+                    db: Session = Depends(get_db),
+                    user: dict[str, str] = Depends(get_current_user)):
+    if user is None:
+        raise get_user_exception()
+
     result = db.query(models.Todo) \
         .filter(models.Todo.id == todo_id) \
+        .filter(models.Todo.owner_id == user.get("id")) \
         .first()
 
     if result is not None:

@@ -1,23 +1,33 @@
 # from TodoApp import models
 # from TodoApp.database import engin
 
+from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models
 from database import engin, session_db
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engin)
 
 
-# a dependable functions
+# a dependable function:
 def get_db():
     try:
         db = session_db()
         yield db
     finally:
         db.close()
+
+
+class TodoModel(BaseModel):
+
+    title: str
+    description: Optional[str]
+    priority: int = Field(gt=0, lt=6, description="priority is between 1-5 inclusive")
+    iscomplete: bool
 
 
 # using Depends to inject get_db before path operation
@@ -38,6 +48,24 @@ async def read_todo(todo_id: int, db: Session = Depends(get_db)):
     if result is not None:
         return result
     raise http_exception()
+
+
+@app.post("/")
+async def create_todo(todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
+    todo_entity = models.Todo()
+    todo_entity.title = todo.title
+    todo_entity.description = todo.description
+    todo_entity.priority = todo.priority
+    todo_entity.iscomplete = todo.iscomplete
+    # save an instance after flush or committing transaction
+    db.add(todo_entity)
+    # commits transaction
+    db.commit()
+
+    return {
+        'status_code': '201',
+        'transaction': 'Successful'
+    }
 
 
 def http_exception():

@@ -1,14 +1,23 @@
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import session_db, engin
 from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from jose import jwt
 import models
 
 
+# this is secret key of jwt signature
+SECRET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJ"
+# alg in jwt header
+ALGORITHM = "HS256"
+
 models.Base.metadata.create_all(bind=engin)
+
+oath2_bearer = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
@@ -58,6 +67,31 @@ def authenticate_user(username: str, password: str, db: Session):
     return user
 
 
+def create_access_token(username: str,
+                        user_id: int,
+                        expires_delta: Optional[timedelta]):
+    # subject claim in payload
+    encode = {"sub": username, "id": user_id}
+
+    # expire time:
+    if expires_delta:
+        # if expiration time is passed through method, then use it
+        # and if not, define a default expiration time, like 15 minuts
+        # using datetime.utcnow() will avoid local time differences.
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+
+    # update method of dictionary can either get a dict
+    # or get a key/value iterable.
+    # if key exits, update the value of the dict that invoked update from second dict,
+    # if key/keys of second do/does not match the first one, adds them to it.
+    encode.update({'exp': expire})
+
+    # creating a real jwt token:
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 @app.post("/create/user")
 async def create_new_user(new_user: CreateUser, db: Session = Depends(get_db)):
     user_entity = models.User()
@@ -85,4 +119,11 @@ async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
     if not user:
         raise HTTPException(status_code=404,
                             detail="user not found!")
-    return "user verified"
+    # defining an expiration time of token
+    token_expires = timedelta(minutes=20)
+    token = create_access_token(user.username,
+                                user.id,
+                                expires_delta=token_expires)
+    # this returns our token. you can get token and paste it
+    # in jwt.io to see its content
+    return {"token": token}

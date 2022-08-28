@@ -68,7 +68,7 @@ async def create_todo(todo: TodoModel, db: Session = Depends(get_db)) -> dict[st
 
 
 @app.put("/{todo_id}")
-async def create_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
+async def update_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
     todo_entity = db.query(models.Todo) \
         .filter(models.Todo.id == todo_id) \
         .first()
@@ -91,7 +91,7 @@ async def create_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_d
 
 
 @app.delete("/{todo_id}")
-async def create_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
+async def delete_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
     todo_entity = db.query(models.Todo) \
         .filter(models.Todo.id == todo_id) \
         .first()

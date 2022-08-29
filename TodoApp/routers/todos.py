@@ -13,6 +13,7 @@ from .auth import get_current_user, get_user_exception
 models.Base.metadata.create_all(bind=engin)
 
 
+# internally configuring router's prefix, tags and responses
 router = APIRouter(
     prefix="/todos",
     tags=["todos"],

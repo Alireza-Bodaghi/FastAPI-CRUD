@@ -16,11 +16,13 @@ models.Base.metadata.create_all(bind=engin)
 
 # a dependable function:
 def get_db():
+    db = None
     try:
         db = session_db()
         yield db
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
 
 class TodoModel(BaseModel):
@@ -74,14 +76,25 @@ async def read_todo(todo_id: int,
 
 
 @app.post("/")
-async def create_todo(todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
+async def create_todo(todo: TodoModel,
+                      user: dict[str, str] = Depends(get_current_user),
+                      db: Session = Depends(get_db)) -> dict[str, str]:
+
+    if user is None:
+        raise get_user_exception()
+
     todo_entity = models.Todo()
     todo_entity.title = todo.title
     todo_entity.description = todo.description
     todo_entity.priority = todo.priority
     todo_entity.is_complete = todo.is_complete
+
+    # setting user PK for our instance
+    todo_entity.owner_id = user.get("id")
+
     # save an instance after flush or committing transaction
     db.add(todo_entity)
+
     # commits transaction
     db.commit()
 

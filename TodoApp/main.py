@@ -105,9 +105,16 @@ async def create_todo(todo: TodoModel,
 
 
 @app.delete("/{todo_id}")
-async def delete_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
+async def delete_todo(todo_id: int,
+                      user: dict[str, str] = Depends(get_current_user),
+                      db: Session = Depends(get_db)) -> dict[str, str]:
+
+    if user is None:
+        raise get_user_exception()
+
     todo_entity = db.query(models.Todo) \
         .filter(models.Todo.id == todo_id) \
+        .filter(models.Todo.owner_id == user.get("id")) \
         .first()
 
     if todo_entity is None:
@@ -115,6 +122,7 @@ async def delete_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, 
 
     # deletes data after flush or committing transaction
     db.query(models.Todo).filter(models.Todo.id == todo_id).delete()
+
     db.commit()
 
     return {

@@ -104,29 +104,6 @@ async def create_todo(todo: TodoModel,
     }
 
 
-@app.put("/{todo_id}")
-async def update_todo(todo_id: int, todo: TodoModel, db: Session = Depends(get_db)) -> dict[str, str]:
-    todo_entity = db.query(models.Todo) \
-        .filter(models.Todo.id == todo_id) \
-        .first()
-
-    if todo_entity is None:
-        raise http_exception()
-
-    todo_entity.title = todo.title
-    todo_entity.description = todo.description
-    todo_entity.priority = todo.priority
-    todo_entity.is_complete = todo.is_complete
-    # updates an instance after flush or committing transaction by PK
-    db.add(todo_entity)
-    db.commit()
-
-    return {
-        'status_code': '200',
-        'transaction': 'Successful'
-    }
-
-
 @app.delete("/{todo_id}")
 async def delete_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
     todo_entity = db.query(models.Todo) \
@@ -138,6 +115,37 @@ async def delete_todo(todo_id: int, db: Session = Depends(get_db)) -> dict[str, 
 
     # deletes data after flush or committing transaction
     db.query(models.Todo).filter(models.Todo.id == todo_id).delete()
+    db.commit()
+
+    return {
+        'status_code': '200',
+        'transaction': 'Successful'
+    }
+
+
+@app.put("/{todo_id}")
+async def update_todo(todo_id: int,
+                      todo: TodoModel,
+                      user: dict[str, str] = Depends(get_current_user),
+                      db: Session = Depends(get_db)) -> dict[str, str]:
+
+    if user is None:
+        raise get_user_exception()
+
+    todo_entity = db.query(models.Todo) \
+        .filter(models.Todo.id == todo_id) \
+        .filter(models.Todo.owner_id == user.get("id")) \
+        .first()
+
+    if todo_entity is None:
+        raise http_exception()
+
+    todo_entity.title = todo.title
+    todo_entity.description = todo.description
+    todo_entity.priority = todo.priority
+    todo_entity.is_complete = todo.is_complete
+    # updates an instance after flush or committing transaction by PK
+    db.add(todo_entity)
     db.commit()
 
     return {

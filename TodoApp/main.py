@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 import models
 from database import engin
 from routers import auth, todos
-from company import companyapis
+from company import companyapis, dependencies
 
 
 app = FastAPI()
@@ -18,9 +18,13 @@ app.include_router(todos.router)
 
 # externally configuring prefix, tags, and responses
 # in main.py
+# before calling a companyapi there specific security
+# that gotta be matched. in that case, we can define a dependency
+# that checks token_header before calling the api.
 app.include_router(
     companyapis.router,
     prefix="/companyapis",
     tags=["companyapis"],
+    dependencies=[Depends(dependencies.get_token_header)],
     responses={418: {"description": "Internal use only"}}
 )

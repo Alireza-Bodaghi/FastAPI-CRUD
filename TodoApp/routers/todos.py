@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 from typing import Optional
@@ -9,10 +10,15 @@ from database import engin, session_db
 from pydantic import BaseModel, Field
 from .auth import get_current_user, get_user_exception
 
-
 models.Base.metadata.create_all(bind=engin)
 
-router = APIRouter()
+
+router = APIRouter(
+    prefix="/todos",
+    tags=["todos"],
+    responses={
+        404: {"description": "Not found!"}
+    })
 
 
 # a dependable function:
@@ -47,19 +53,19 @@ async def read_all(db: Session = Depends(get_db)):
 # from main.py.
 # get_current_user dependency runs before path operations and gets
 # a user in the format of dict.
-@router.get("/todo/user")
+@router.get("/user")
 async def read_all_todos_by_user(user: dict[str, str] = Depends(get_current_user),
                                  db: Session = Depends(get_db)):
     if user is None:
         raise get_user_exception()
 
-    todos: list[models.Todo] = db.query(models.Todo)\
-        .filter(models.Todo.owner_id == user.get("id"))\
+    todos: list[models.Todo] = db.query(models.Todo) \
+        .filter(models.Todo.owner_id == user.get("id")) \
         .all()
     return todos
 
 
-@router.get("/todo/{todo_id}")
+@router.get("/{todo_id}")
 async def read_todo(todo_id: int,
                     db: Session = Depends(get_db),
                     user: dict[str, str] = Depends(get_current_user)):
@@ -80,7 +86,6 @@ async def read_todo(todo_id: int,
 async def create_todo(todo: TodoModel,
                       user: dict[str, str] = Depends(get_current_user),
                       db: Session = Depends(get_db)) -> dict[str, str]:
-
     if user is None:
         raise get_user_exception()
 
@@ -109,7 +114,6 @@ async def create_todo(todo: TodoModel,
 async def delete_todo(todo_id: int,
                       user: dict[str, str] = Depends(get_current_user),
                       db: Session = Depends(get_db)) -> dict[str, str]:
-
     if user is None:
         raise get_user_exception()
 
@@ -137,7 +141,6 @@ async def update_todo(todo_id: int,
                       todo: TodoModel,
                       user: dict[str, str] = Depends(get_current_user),
                       db: Session = Depends(get_db)) -> dict[str, str]:
-
     if user is None:
         raise get_user_exception()
 

@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 from fastapi import Depends, HTTPException, status, APIRouter
@@ -12,7 +13,6 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 
-
 # this is secret key of jwt signature
 SECRET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJ"
 
@@ -24,7 +24,13 @@ models.Base.metadata.create_all(bind=engin)
 oath2_bearer = OAuth2PasswordBearer(tokenUrl="token")
 
 # declaring auth as a router
-router = APIRouter()
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+    responses={
+        401: {"user": "Not Authorized"}
+    }
+)
 
 
 def get_db():
@@ -62,8 +68,8 @@ def verify_password(plain_password: str, hashed_password: str):
 
 # authenticating user
 def authenticate_user(username: str, password: str, db: Session):
-    user: models.User = db.query(models.User)\
-        .filter(models.User.username == username)\
+    user: models.User = db.query(models.User) \
+        .filter(models.User.username == username) \
         .first()
     if not user:
         return False
@@ -153,7 +159,7 @@ async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
 # Exceptions:
 def get_user_exception():
     credentials_exception = HTTPException(
-        status_code= status.HTTP_401_UNAUTHORIZED,
+        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials!",
         headers={"WWW-Authenticate": "Bearer"}
     )

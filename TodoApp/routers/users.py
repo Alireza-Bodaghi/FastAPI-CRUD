@@ -82,3 +82,19 @@ async def change_user_password(user_verification: UserVerification,
             session.commit()
             return "Successful"
     return "Invalid user or request"
+
+
+@router.delete("/user")
+async def delete_user(user: dict[str, str] = Depends(get_current_user),
+                      session: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+
+    user_entity: models.User = session.get(models.User, user.get("id"))
+
+    if user_entity is None:
+        return "Invalid user or request"
+
+    session.query(models.User).filter(models.User.id == user.get("id")).delete()
+
+    return "Deleted Successfully!"

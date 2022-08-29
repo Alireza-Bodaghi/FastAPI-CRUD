@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 import models
 from database import engin
-from routers import auth, todos
+from routers import auth, todos, users
 from company import companyapis, dependencies
 
 
@@ -14,6 +14,8 @@ app.include_router(auth.router)
 
 # defining todos.router to include it in our FastAPI
 app.include_router(todos.router)
+
+app.include_router(users.router)
 
 
 # externally configuring prefix, tags, and responses

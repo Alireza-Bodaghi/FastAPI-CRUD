@@ -7,11 +7,17 @@ from sqlalchemy.orm import Session
 import models
 from database import engin, session_db
 from pydantic import BaseModel, Field
-from auth import get_current_user, get_user_exception
+from routers.auth import get_current_user, get_user_exception
+from routers import auth
+
 
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engin)
+
+
+# defining auth.router to include it in our FastAPI
+app.include_router(auth.router)
 
 
 # a dependable function:

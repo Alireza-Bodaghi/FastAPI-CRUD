@@ -1,13 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+import sys
+sys.path.append("..")
+
+from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import session_db, engin
+import models
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-import models
 
 
 # this is secret key of jwt signature
@@ -20,7 +23,8 @@ models.Base.metadata.create_all(bind=engin)
 
 oath2_bearer = OAuth2PasswordBearer(tokenUrl="token")
 
-app = FastAPI()
+# declaring auth as a router
+router = APIRouter()
 
 
 def get_db():
@@ -109,7 +113,7 @@ async def get_current_user(token: str = Depends(oath2_bearer)):
         raise get_user_exception()
 
 
-@app.post("/create/user")
+@router.post("/create/user")
 async def create_new_user(new_user: CreateUser, db: Session = Depends(get_db)):
     user_entity = models.User()
     user_entity.username = new_user.username
@@ -125,7 +129,7 @@ async def create_new_user(new_user: CreateUser, db: Session = Depends(get_db)):
 
 # read OAuth2PasswordRequestForm docs for further information
 # it's a simple form to get username and password
-@app.post("/token")
+@router.post("/token")
 async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
                                  db: Session = Depends(get_db)):
     username = form.username
@@ -135,6 +139,7 @@ async def login_for_access_token(form: OAuth2PasswordRequestForm = Depends(),
 
     if not user:
         raise get_token_exception()
+
     # defining an expiration time of token
     token_expires = timedelta(minutes=20)
     token = create_access_token(user.username,

@@ -24,13 +24,14 @@ depends_on = None
 
 
 # in order to run upgrade, use:
-# alembic upgrade <revision number>
+# alembic upgrade <revision string>
 
 def upgrade() -> None:
     op.add_column('user', sa.Column('phone_number', sa.String(), nullable=True))
 
 
-# in order to run downgrade, use:
-# alembic downgrade -1
+# in order to run downgrade :
+# if downgrade in not None, use: alembic downgrade -1 command
+# if downgrade is initialized, use: alembic downgrade <downgrade string>
 def downgrade() -> None:
     op.drop_column('user', 'phone_number')

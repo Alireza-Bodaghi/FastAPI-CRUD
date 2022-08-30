@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("..")
 
 from typing import Optional
@@ -10,7 +11,6 @@ from pydantic import BaseModel, Field
 from .auth import get_current_user, get_user_exception
 
 models.Base.metadata.create_all(bind=engin)
-
 
 # internally configuring router's prefix, tags and responses
 router = APIRouter(
@@ -141,6 +141,7 @@ async def update_todo(todo_id: int,
                       todo: TodoModel,
                       user: dict[str, str] = Depends(get_current_user),
                       db: Session = Depends(get_db)) -> dict[str, str]:
+
     if user is None:
         raise get_user_exception()
 

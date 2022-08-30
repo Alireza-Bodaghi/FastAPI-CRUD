@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 import models
 from database import engin
-from routers import auth, todos, users
+from routers import auth, todos, users, address
 from company import companyapis, dependencies
 
 
@@ -30,3 +30,5 @@ app.include_router(
     dependencies=[Depends(dependencies.get_token_header)],
     responses={418: {"description": "Internal use only"}}
 )
+
+app.include_router(address.router)

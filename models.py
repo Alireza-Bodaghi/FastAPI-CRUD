@@ -15,8 +15,14 @@ class User(Base):
     last_name = Column(String)
     hashed_password=Column(String)
     is_active = Column(Boolean, default=True)
-    # bidirectional relationship
+    phone_number = Column(String)
+    address_id = Column(Integer, ForeignKey("address.id"))
+
+    # bidirectional relationship (one-to-many relationship)
     todos = relationship("Todo", back_populates="owner")
+
+    # unidirectional relationship (one-to-one relationship)
+    address = relationship("Address", back_populates="user_address")
 
 
 class Todo(Base):
@@ -27,7 +33,32 @@ class Todo(Base):
     description = Column(String)
     priority = Column(Integer)
     is_complete = Column(Boolean, default=False)
+
     # defining a foreign key to user
     owner_id = Column(Integer, ForeignKey("user.id"))
+
     # bidirectional relationship
     owner = relationship("User", back_populates="todos")
+
+
+class Address(Base):
+    __tablename__ = "address"
+
+    id = Column(Integer, primary_key=True, index=True)
+    address1 = Column(String)
+    address2 = Column(String)
+    city = Column(String)
+    state = Column(String)
+    country = Column(String)
+    postalcode = Column(String)
+
+    user_address = relationship("User", back_populates="address")
+
+
+
+
+
+
+
+
+

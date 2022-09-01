@@ -1,4 +1,6 @@
-from database import session_db
+from sqlalchemy.exc import SQLAlchemyError
+
+from Core.database import session_db
 
 
 class DBInternalError(Exception):
@@ -6,10 +8,15 @@ class DBInternalError(Exception):
 
 
 def get_session():
-    db = None
+    session = None
     try:
-        db = session_db()
-        yield db
+        session = session_db()
+        yield session
+
+    except SQLAlchemyError as e:
+        # logger.error(e.args)
+        print(e)
+        session.rollback()
     finally:
-        if db is not None:
-            db.close()
+        if session is not None:
+            session.close()

@@ -1,16 +1,20 @@
 import sys
 
-sys.path.append("..")
+sys.path.append("../..")
 
+from Models.todo_model import Todo
 from typing import Optional
 from fastapi import Depends, HTTPException, APIRouter
 from sqlalchemy.orm import Session
-from Models import models
-from database import engin, session_db
+from Models import all_models
+from Core.database import engin
+from Core.sessionBuilder import get_session
+from Services.todo_services import load_all_todos, load_all_user_todos, load_todo_by_id_and_user_id, persist_todo, \
+    remove_todo
 from pydantic import BaseModel, Field
-from .auth import get_current_user, get_user_exception
+from Services.auth_services import get_current_user, get_user_exception
 
-models.Base.metadata.create_all(bind=engin)
+all_models.Base.metadata.create_all(bind=engin)
 
 # internally configuring router's prefix, tags and responses
 router = APIRouter(
@@ -21,17 +25,6 @@ router = APIRouter(
     })
 
 
-# a dependable function:
-def get_db():
-    db = None
-    try:
-        db = session_db()
-        yield db
-    finally:
-        if db is not None:
-            db.close()
-
-
 class TodoModel(BaseModel):
     title: str
     description: Optional[str]
@@ -40,12 +33,12 @@ class TodoModel(BaseModel):
 
 
 # using 'Depends()' to inject get_db before path operation
-# so this api is called 'dependent' and 'get_db' is called
+# so this API is called 'dependent' and 'get_db' is called
 # 'dependable'
 # this is how dependency injection in FastAPI works.
 @router.get("/")
-async def read_all(db: Session = Depends(get_db)):
-    return db.query(models.Todo).all()
+async def read_all(session: Session = Depends(get_session)):
+    return load_all_todos(session)
 
 
 # getting token on different port(like 9000) from auth.py
@@ -55,27 +48,22 @@ async def read_all(db: Session = Depends(get_db)):
 # a user in the format of dict.
 @router.get("/user")
 async def read_all_todos_by_user(user: dict[str, str] = Depends(get_current_user),
-                                 db: Session = Depends(get_db)):
+                                 session: Session = Depends(get_session)):
     if user is None:
         raise get_user_exception()
 
-    todos: list[models.Todo] = db.query(models.Todo) \
-        .filter(models.Todo.owner_id == user.get("id")) \
-        .all()
+    todos: list[Todo] = load_all_user_todos(int(user.get("id")), session)
     return todos
 
 
 @router.get("/{todo_id}")
 async def read_todo(todo_id: int,
-                    db: Session = Depends(get_db),
+                    session: Session = Depends(get_session),
                     user: dict[str, str] = Depends(get_current_user)):
     if user is None:
         raise get_user_exception()
 
-    result = db.query(models.Todo) \
-        .filter(models.Todo.id == todo_id) \
-        .filter(models.Todo.owner_id == user.get("id")) \
-        .first()
+    result = load_todo_by_id_and_user_id(int(todo_id), int(user.get("id")), session)
 
     if result is not None:
         return result
@@ -85,11 +73,11 @@ async def read_todo(todo_id: int,
 @router.post("/")
 async def create_todo(todo: TodoModel,
                       user: dict[str, str] = Depends(get_current_user),
-                      db: Session = Depends(get_db)) -> dict[str, str]:
+                      session: Session = Depends(get_session)) -> dict[str, str]:
     if user is None:
         raise get_user_exception()
 
-    todo_entity = models.Todo()
+    todo_entity = Todo()
     todo_entity.title = todo.title
     todo_entity.description = todo.description
     todo_entity.priority = todo.priority
@@ -99,10 +87,10 @@ async def create_todo(todo: TodoModel,
     todo_entity.owner_id = user.get("id")
 
     # save an instance after flush or committing transaction
-    db.add(todo_entity)
-
+    # db.add(todo_entity)
+    persist_todo(todo_entity, session)
     # commits transaction
-    db.commit()
+    session.commit()
 
     return {
         'status_code': '201',
@@ -113,22 +101,18 @@ async def create_todo(todo: TodoModel,
 @router.delete("/{todo_id}")
 async def delete_todo(todo_id: int,
                       user: dict[str, str] = Depends(get_current_user),
-                      db: Session = Depends(get_db)) -> dict[str, str]:
+                      session: Session = Depends(get_session)) -> dict[str, str]:
     if user is None:
         raise get_user_exception()
 
-    todo_entity = db.query(models.Todo) \
-        .filter(models.Todo.id == todo_id) \
-        .filter(models.Todo.owner_id == user.get("id")) \
-        .first()
+    todo_entity = load_todo_by_id_and_user_id(todo_id, int(user.get("id")), session)
 
     if todo_entity is None:
         raise http_exception()
 
     # deletes data after flush or committing transaction
-    db.query(models.Todo).filter(models.Todo.id == todo_id).delete()
-
-    db.commit()
+    remove_todo(todo_id, session)
+    session.commit()
 
     return {
         'status_code': '200',
@@ -140,15 +124,11 @@ async def delete_todo(todo_id: int,
 async def update_todo(todo_id: int,
                       todo: TodoModel,
                       user: dict[str, str] = Depends(get_current_user),
-                      db: Session = Depends(get_db)) -> dict[str, str]:
-
+                      session: Session = Depends(get_session)) -> dict[str, str]:
     if user is None:
         raise get_user_exception()
 
-    todo_entity = db.query(models.Todo) \
-        .filter(models.Todo.id == todo_id) \
-        .filter(models.Todo.owner_id == user.get("id")) \
-        .first()
+    todo_entity = load_todo_by_id_and_user_id(todo_id, int(user.get("id")), session)
 
     if todo_entity is None:
         raise http_exception()
@@ -158,8 +138,8 @@ async def update_todo(todo_id: int,
     todo_entity.priority = todo.priority
     todo_entity.is_complete = todo.is_complete
     # updates an instance after flush or committing transaction by PK
-    db.add(todo_entity)
-    db.commit()
+    persist_todo(todo_entity, session)
+    session.commit()
 
     return {
         'status_code': '200',

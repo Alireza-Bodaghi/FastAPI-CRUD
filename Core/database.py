@@ -11,7 +11,7 @@ from sqlalchemy.ext.declarative import declarative_base
 #     connect_args={"check_same_thread": False}
 # )
 
-DATABASE_URI = 'postgresql://postgres:13724123@localhost/todo'
+DATABASE_URI = 'postgresql://postgres:13724123@localhost/test_engin'
 
 engin = create_engine(DATABASE_URI)
 

@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Depends
-from Models import models
-from database import engin
+from Models import all_models
+from Core.database import engin
 from API.routers import address, users, todos, auth
 from company import companyapis, dependencies
 
 
 app = FastAPI()
 
-models.Base.metadata.create_all(bind=engin)
+all_models.Base.metadata.create_all(bind=engin)
 
 # defining auth.router to include it in our FastAPI
 app.include_router(auth.router)

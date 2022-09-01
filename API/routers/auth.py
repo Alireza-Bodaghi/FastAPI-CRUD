@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 from database import session_db, engin
-import models
+from Models import models
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt, JWTError

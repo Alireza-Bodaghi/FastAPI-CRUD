@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
-import models
+from Models import models
 from database import engin
-from routers import auth, todos, users, address
+from API.routers import address, users, todos, auth
 from company import companyapis, dependencies
 
 
@@ -22,7 +22,7 @@ app.include_router(users.router)
 # in main.py
 # before calling a companyapi there specific security
 # that gotta be matched. in that case, we can define a dependency
-# that checks token_header before calling the api.
+# that checks token_header before calling the API.
 app.include_router(
     companyapis.router,
     prefix="/companyapis",

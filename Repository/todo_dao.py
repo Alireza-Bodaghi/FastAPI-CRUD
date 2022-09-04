@@ -11,7 +11,7 @@ def get_all_todos(session: Session):
     except Exception as e:
         raise DBInternalError(e)
 
-    yield todos
+    return todos
 
 
 def get_all_user_todos(user_id: int, session: Session):

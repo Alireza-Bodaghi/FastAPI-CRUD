@@ -7,6 +7,12 @@ from company import companyapis, dependencies
 
 app = FastAPI()
 
+# app = FastAPI(
+#     docs_url=None,
+#     redoc_url=None
+# )
+
+
 all_models.Base.metadata.create_all(bind=engin)
 
 # defining auth.router to include it in our FastAPI

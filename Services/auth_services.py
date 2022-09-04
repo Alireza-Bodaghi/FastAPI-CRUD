@@ -1,7 +1,7 @@
 import sys
 from typing import Optional
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Header
 from starlette import status
 
 sys.path.append("..")
@@ -79,6 +79,21 @@ def create_access_token(username: str,
 
 # decoding token and getting username and user_id(PK)
 async def get_current_user(token: str = Depends(oath2_bearer)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        username: str = payload.get("sub")
+        user_id = payload.get("id")
+        if username is None or user_id is None:
+            raise get_user_exception()
+        return {
+            "username": username,
+            "id": user_id
+        }
+    except JWTError:
+        raise get_user_exception()
+
+
+async def get_current_user_by_header_auth(token: str = Header(...)):
     try:
         payload = jwt.decode(token, SECRET_KEY, ALGORITHM)
         username: str = payload.get("sub")

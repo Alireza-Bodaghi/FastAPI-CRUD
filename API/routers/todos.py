@@ -1,10 +1,12 @@
+import json
 import sys
+import traceback
 
 sys.path.append("../..")
 
 from Models.todo_model import Todo
 from typing import Optional
-from fastapi import Depends, HTTPException, APIRouter
+from fastapi import Depends, HTTPException, APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from Models import all_models
 from Core.database import engin
@@ -12,7 +14,7 @@ from Core.sessionBuilder import get_session
 from Services.todo_services import load_all_todos, load_all_user_todos, load_todo_by_id_and_user_id, persist_todo, \
     remove_todo
 from pydantic import BaseModel, Field
-from Services.auth_services import get_current_user, get_user_exception
+from Services.auth_services import get_current_user, get_user_exception, get_current_user_by_header_auth
 
 all_models.Base.metadata.create_all(bind=engin)
 
@@ -146,6 +148,38 @@ async def update_todo(todo_id: int,
         'transaction': 'Successful'
     }
 
+
+@router.websocket("/websocket/create/")
+async def websocket_endpoint(websocket: WebSocket,
+                             session: Session = Depends(get_session),
+                             user: dict[str, str] = Depends(get_current_user_by_header_auth)):
+    try:
+        await websocket.accept()
+        print(user)
+
+        while True:
+            request_text = await websocket.receive_json()
+            request_json = json.dumps(request_text)
+            data_dict = json.loads(request_json)
+            todo: Todo = Todo()
+            todo.title = str(data_dict['title'])
+            todo.priority = int(data_dict['priority'])
+            todo.description = str(data_dict['description'])
+            todo.is_complete = bool(data_dict['is_complete'])
+            todo.owner_id = user.get("id")
+            persist_todo(todo, session)
+            session.commit()
+            await websocket.send_json(request_json)
+
+    except WebSocketDisconnect as e:
+        print("client has closed the connections")
+        traceback.print_exception(*sys.exc_info())
+        session.rollback()
+
+    except Exception as e:
+        print("an exception occurred")
+        traceback.print_exception(*sys.exc_info())
+        session.rollback()
 
 def http_exception():
     return HTTPException(status_code=404,
